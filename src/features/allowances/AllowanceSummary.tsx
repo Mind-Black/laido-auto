@@ -9,7 +9,7 @@ interface Props {
 }
 
 export const AllowanceSummary: React.FC<Props> = ({ allowances, loading }) => {
-  if (loading || !allowances) {
+  if (loading || !allowances || !allowances.daily || !allowances.weekly) {
     return (
       <div className="flex gap-4 items-center text-sm text-slate-500 animate-pulse">
         <div className="h-6 w-32 bg-slate-200 rounded"></div>
