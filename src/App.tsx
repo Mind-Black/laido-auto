@@ -26,11 +26,13 @@ import { CalendarView } from './features/calendar/CalendarView';
 import { BookingModal } from './features/bookings/BookingModal';
 import { MyBookingsModal } from './features/bookings/MyBookingsModal';
 import { AdminModal } from './features/admin/AdminModal';
+import { LoginModal } from './features/auth/LoginModal';
 import { DateTime } from 'luxon';
 import { DEFAULT_TIMEZONE } from './lib/time';
+import { LogIn } from 'lucide-react';
 
 export const AppContent: React.FC = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, isConfigured, isLoggedIn } = useAuth();
   const [chargers, setChargers] = useState<Charger[]>([]);
   const [blocks, setBlocks] = useState<CalendarBlock[]>([]);
   const [myReservations, setMyReservations] = useState<Reservation[]>([]);
@@ -42,6 +44,7 @@ export const AppContent: React.FC = () => {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isMyBookingsOpen, setIsMyBookingsOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   // Selected slot from drag/click
   const [selectedSlot, setSelectedSlot] = useState<{
@@ -65,21 +68,28 @@ export const AppContent: React.FC = () => {
       const rangeStart = now.minus({ days: 14 }).toUTC().toISO()!;
       const rangeEnd = now.plus({ days: 35 }).toUTC().toISO()!;
 
-      const [calendarBlocks, userBookings, userAllowances] = await Promise.all([
-        fetchCalendar('00000000-0000-0000-0000-000000000001', rangeStart, rangeEnd, currentUser.user_id),
-        fetchMyReservations(currentUser.user_id),
-        fetchAllowances('00000000-0000-0000-0000-000000000001', currentUser.user_id),
-      ]);
+      if (!isConfigured || isLoggedIn) {
+        const [calendarBlocks, userBookings, userAllowances] = await Promise.all([
+          fetchCalendar('00000000-0000-0000-0000-000000000001', rangeStart, rangeEnd, currentUser.user_id),
+          fetchMyReservations(currentUser.user_id),
+          fetchAllowances('00000000-0000-0000-0000-000000000001', currentUser.user_id),
+        ]);
 
-      setBlocks(calendarBlocks);
-      setMyReservations(userBookings);
-      setAllowances(userAllowances);
+        setBlocks(calendarBlocks);
+        setMyReservations(userBookings);
+        setAllowances(userAllowances);
+      } else {
+        // Not signed in to Supabase yet
+        setBlocks([]);
+        setMyReservations([]);
+        setAllowances(null);
+      }
     } catch (err: unknown) {
       console.error('Error loading data:', err);
     } finally {
       setLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser, isConfigured, isLoggedIn]);
 
   useEffect(() => {
     loadData();
@@ -103,11 +113,19 @@ export const AppContent: React.FC = () => {
 
   // Actions
   const handleSelectSlot = (chargerId: string, startIso: string, endIso: string) => {
+    if (isConfigured && !isLoggedIn) {
+      setIsLoginOpen(true);
+      return;
+    }
     setSelectedSlot({ chargerId, startIso, endIso });
     setIsBookingModalOpen(true);
   };
 
   const handleOpenNewBooking = () => {
+    if (isConfigured && !isLoggedIn) {
+      setIsLoginOpen(true);
+      return;
+    }
     setSelectedSlot(null);
     setIsBookingModalOpen(true);
   };
@@ -177,21 +195,43 @@ export const AppContent: React.FC = () => {
         onOpenNewBooking={handleOpenNewBooking}
         onOpenMyBookings={() => setIsMyBookingsOpen(true)}
         onOpenAdmin={() => setIsAdminOpen(true)}
+        onOpenLogin={() => setIsLoginOpen(true)}
         myBookingsCount={myReservations.filter((r) => ['reserved', 'checked_in'].includes(r.status)).length}
       />
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+        {/* Unauthenticated notice in live Supabase mode */}
+        {isConfigured && !isLoggedIn && (
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between gap-4 text-xs text-blue-950">
+            <div>
+              <div className="font-semibold text-sm mb-0.5">Welcome to Laido Building 1 EV Charging</div>
+              <p className="text-blue-800">
+                Please sign in with your resident account to view live availability, reserve chargers, and manage check-ins.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsLoginOpen(true)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>Sign in</span>
+            </button>
+          </div>
+        )}
+
         {/* Active Booking Banner */}
-        <ActiveBookingBanner
-          reservations={myReservations}
-          chargers={chargers}
-          onCheckIn={handleCheckIn}
-          onFinishEarly={handleFinishEarly}
-        />
+        {isLoggedIn && (
+          <ActiveBookingBanner
+            reservations={myReservations}
+            chargers={chargers}
+            onCheckIn={handleCheckIn}
+            onFinishEarly={handleFinishEarly}
+          />
+        )}
 
         {/* Quota & Allowance Progress */}
-        <AllowanceSummary allowances={allowances} loading={loading} />
+        {isLoggedIn && <AllowanceSummary allowances={allowances} loading={loading} />}
 
         {/* Calendar View */}
         <CalendarView
@@ -234,6 +274,11 @@ export const AppContent: React.FC = () => {
         isOpen={isAdminOpen}
         onClose={() => setIsAdminOpen(false)}
         chargers={chargers}
+      />
+
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
       />
 
       {/* Toast Notification */}

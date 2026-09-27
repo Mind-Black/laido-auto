@@ -8,7 +8,9 @@ interface AuthContextType {
   setCurrentUser: (user: UserSession) => void;
   availableUsers: UserSession[];
   isConfigured: boolean;
+  isLoggedIn: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithOtp: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -16,6 +18,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<UserSession>(() => {
+    if (isSupabaseConfigured) {
+      // In configured mode, initialize as empty until authenticated
+      return { user_id: '', email: '', role: 'member', is_active: false };
+    }
     const saved = localStorage.getItem('laido_active_user');
     if (saved) {
       try {
@@ -47,12 +53,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user_id: userId,
       email: email,
       role: membership?.role === 'admin' ? 'admin' : 'member',
-      is_active: membership?.active ?? false,
+      is_active: membership?.active ?? true, // active by default if membership exists
     });
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('laido_active_user', JSON.stringify(currentUser));
+    if (!isSupabaseConfigured) {
+      localStorage.setItem('laido_active_user', JSON.stringify(currentUser));
+    }
   }, [currentUser]);
 
   useEffect(() => {
@@ -67,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user) {
           syncMembership(session.user.id, session.user.email || 'user@example.com');
         } else {
-          setCurrentUser(DEMO_USERS[0]);
+          setCurrentUser({ user_id: '', email: '', role: 'member', is_active: false });
         }
       });
 
@@ -88,12 +96,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signInWithOtp = async (email: string) => {
+    if (isSupabaseConfigured && supabase) {
+      const redirectUrl = window.location.origin + window.location.pathname;
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: redirectUrl,
+        },
+      });
+      if (error) throw error;
+    }
+  };
+
   const signOut = async () => {
     if (isSupabaseConfigured && supabase) {
       await supabase.auth.signOut();
+      setCurrentUser({ user_id: '', email: '', role: 'member', is_active: false });
+    } else {
+      setCurrentUser(DEMO_USERS[0]);
     }
-    setCurrentUser(DEMO_USERS[0]);
   };
+
+  const isLoggedIn = isSupabaseConfigured ? Boolean(currentUser.user_id) : true;
 
   return (
     <AuthContext.Provider
@@ -102,7 +127,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCurrentUser,
         availableUsers: DEMO_USERS,
         isConfigured: isSupabaseConfigured,
+        isLoggedIn,
         signInWithGoogle,
+        signInWithOtp,
         signOut,
       }}
     >

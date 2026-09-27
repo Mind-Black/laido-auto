@@ -8,6 +8,7 @@ interface Props {
   onOpenNewBooking: () => void;
   onOpenMyBookings: () => void;
   onOpenAdmin: () => void;
+  onOpenLogin: () => void;
   myBookingsCount: number;
 }
 
@@ -15,9 +16,10 @@ export const Header: React.FC<Props> = ({
   onOpenNewBooking,
   onOpenMyBookings,
   onOpenAdmin,
+  onOpenLogin,
   myBookingsCount,
 }) => {
-  const { currentUser, setCurrentUser, availableUsers, isConfigured, signInWithGoogle, signOut } = useAuth();
+  const { currentUser, setCurrentUser, availableUsers, isConfigured, isLoggedIn, signOut } = useAuth();
 
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
@@ -44,58 +46,65 @@ export const Header: React.FC<Props> = ({
 
         {/* Right: Actions and User switch */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={onOpenNewBooking}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            New booking
-          </button>
+          {isLoggedIn && (
+            <>
+              <button
+                onClick={onOpenNewBooking}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                New booking
+              </button>
 
-          <button
-            onClick={onOpenMyBookings}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors cursor-pointer relative"
-          >
-            <Calendar className="w-4 h-4 text-slate-600" />
-            <span className="hidden md:inline">My bookings</span>
-            {myBookingsCount > 0 && (
-              <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
-                {myBookingsCount}
-              </span>
-            )}
-          </button>
+              <button
+                onClick={onOpenMyBookings}
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors cursor-pointer relative"
+              >
+                <Calendar className="w-4 h-4 text-slate-600" />
+                <span className="hidden md:inline">My bookings</span>
+                {myBookingsCount > 0 && (
+                  <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                    {myBookingsCount}
+                  </span>
+                )}
+              </button>
 
-          {currentUser.role === 'admin' && (
-            <button
-              onClick={onOpenAdmin}
-              className="inline-flex items-center gap-1 px-2.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-medium rounded-lg transition-colors cursor-pointer"
-              title="Admin settings"
-            >
-              <Shield className="w-3.5 h-3.5 text-amber-600" />
-              <span className="hidden md:inline">Admin</span>
-            </button>
+              {currentUser.role === 'admin' && (
+                <button
+                  onClick={onOpenAdmin}
+                  className="inline-flex items-center gap-1 px-2.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                  title="Admin settings"
+                >
+                  <Shield className="w-3.5 h-3.5 text-amber-600" />
+                  <span className="hidden md:inline">Admin</span>
+                </button>
+              )}
+            </>
           )}
 
           {/* User Section */}
           {isConfigured ? (
             <div className="flex items-center gap-2 pl-2 border-l border-slate-200 text-xs">
-              <span className="text-slate-700 font-medium hidden sm:inline">{currentUser.email}</span>
-              <button
-                onClick={currentUser.user_id ? () => signOut() : () => signInWithGoogle()}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-md transition-colors cursor-pointer"
-              >
-                {currentUser.user_id ? (
-                  <>
+              {isLoggedIn ? (
+                <>
+                  <span className="text-slate-700 font-medium hidden sm:inline">{currentUser.email}</span>
+                  <button
+                    onClick={() => signOut()}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-md transition-colors cursor-pointer"
+                  >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Sign out</span>
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Sign in with Google</span>
-                  </>
-                )}
-              </button>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={onOpenLogin}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md shadow-xs transition-colors cursor-pointer"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Sign in</span>
+                </button>
+              )}
             </div>
           ) : (
             /* Local Sandbox demo switcher */
