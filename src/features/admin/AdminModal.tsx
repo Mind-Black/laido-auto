@@ -1,19 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Charger } from '../../lib/types';
 import { X, Shield, Wrench, CheckCircle2 } from 'lucide-react';
-import { mockStore } from '../../lib/mockStore';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   chargers: Charger[];
+  onToggleCharger: (charger: Charger) => Promise<void>;
 }
 
-export const AdminModal: React.FC<Props> = ({ isOpen, onClose, chargers }) => {
+export const AdminModal: React.FC<Props> = ({ isOpen, onClose, chargers, onToggleCharger }) => {
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   if (!isOpen) return null;
 
-  const handleToggleCharger = (charger: Charger) => {
-    mockStore.setChargerEnabled(charger.id, !charger.enabled);
+  const handleToggleCharger = async (charger: Charger) => {
+    setPendingId(charger.id);
+    setErrorMessage(null);
+    try {
+      await onToggleCharger(charger);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not update charger status.');
+    } finally {
+      setPendingId(null);
+    }
   };
 
   return (
@@ -33,6 +43,7 @@ export const AdminModal: React.FC<Props> = ({ isOpen, onClose, chargers }) => {
         </div>
 
         <div className="p-6 space-y-6">
+          {errorMessage && <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">{errorMessage}</div>}
           {/* Charger Management */}
           <div>
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
@@ -62,13 +73,14 @@ export const AdminModal: React.FC<Props> = ({ isOpen, onClose, chargers }) => {
 
                   <button
                     onClick={() => handleToggleCharger(c)}
+                    disabled={pendingId !== null}
                     className={`px-3 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition-colors ${
                       c.enabled
                         ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
                         : 'bg-emerald-600 text-white hover:bg-emerald-700'
                     }`}
                   >
-                    {c.enabled ? 'Set Maintenance' : 'Set Active'}
+                    {pendingId === c.id ? 'Updating...' : c.enabled ? 'Set Maintenance' : 'Set Active'}
                   </button>
                 </div>
               ))}

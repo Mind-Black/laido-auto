@@ -5,6 +5,7 @@ import { AllowanceSummary } from '../features/allowances/AllowanceSummary';
 import { ActiveBookingBanner } from '../features/bookings/ActiveBookingBanner';
 import { CalendarView } from '../features/calendar/CalendarView';
 import { BookingModal } from '../features/bookings/BookingModal';
+import { AdminModal } from '../features/admin/AdminModal';
 import { AuthProvider } from '../features/auth/AuthContext';
 import { fetchAllowances } from '../lib/api';
 import { Reservation, Charger } from '../lib/types';
@@ -185,5 +186,16 @@ describe('BookingModal allowance preview', () => {
 
     await waitFor(() => expect(screen.getByRole('button', { name: 'Reserve' })).toBeEnabled());
     expect(fetchAllowances).toHaveBeenCalled();
+  });
+});
+
+describe('AdminModal charger controls', () => {
+  it('sends the selected charger to the live update callback', async () => {
+    const charger = { id: 'c1', building_id: 'b1', display_name: 'Charger 1', enabled: true };
+    const onToggleCharger = vi.fn().mockResolvedValue(undefined);
+    render(<AdminModal isOpen onClose={vi.fn()} chargers={[charger]} onToggleCharger={onToggleCharger} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Set Maintenance' }));
+    await waitFor(() => expect(onToggleCharger).toHaveBeenCalledWith(charger));
   });
 });

@@ -8,6 +8,7 @@ import {
 } from './lib/types';
 import {
   getChargers,
+  setChargerEnabled,
   fetchCalendar,
   fetchAllowances,
   fetchMyReservations,
@@ -75,10 +76,21 @@ export const AppContent: React.FC = () => {
 
   useEffect(() => {
     let active = true;
-    getChargers()
-      .then((list) => { if (active) { setChargers(list); setChargerError(null); } })
-      .catch(() => { if (active) setChargerError('Chargers could not be loaded. Please retry.'); });
-    return () => { active = false; };
+    const refreshChargers = () => {
+      getChargers()
+        .then((list) => { if (active) { setChargers(list); setChargerError(null); } })
+        .catch(() => { if (active) setChargerError('Chargers could not be loaded. Please retry.'); });
+    };
+    refreshChargers();
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') refreshChargers();
+    }, 120000);
+    window.addEventListener('focus', refreshChargers);
+    return () => {
+      active = false;
+      clearInterval(interval);
+      window.removeEventListener('focus', refreshChargers);
+    };
   }, [currentUser.user_id]);
 
   // Refresh the visible calendar and account data. Ignore responses from superseded requests.
@@ -240,6 +252,13 @@ export const AppContent: React.FC = () => {
     }
   };
 
+  const handleToggleCharger = async (charger: Charger) => {
+    const enabled = !charger.enabled;
+    await setChargerEnabled(charger.id, enabled);
+    setChargers((list) => list.map((item) => item.id === charger.id ? { ...item, enabled } : item));
+    showToast(`${charger.display_name} ${enabled ? 'is active' : 'is in maintenance mode'}.`);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
       <ConfigBanner />
@@ -342,6 +361,7 @@ export const AppContent: React.FC = () => {
         isOpen={isAdminOpen}
         onClose={() => setIsAdminOpen(false)}
         chargers={chargers}
+        onToggleCharger={handleToggleCharger}
       />}
 
       {isLoginOpen && <LoginModal

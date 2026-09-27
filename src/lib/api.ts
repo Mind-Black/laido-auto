@@ -22,6 +22,21 @@ export async function getChargers(): Promise<Charger[]> {
   return mockStore.getChargers();
 }
 
+export async function setChargerEnabled(chargerId: string, enabled: boolean): Promise<void> {
+  if (isSupabaseConfigured && supabase) {
+    const { data, error } = await supabase
+      .from('chargers')
+      .update({ enabled })
+      .eq('id', chargerId)
+      .select('id')
+      .single();
+    if (error) throw new Error(error.message);
+    if (!data) throw new Error('Charger not found or access denied.');
+    return;
+  }
+  mockStore.setChargerEnabled(chargerId, enabled);
+}
+
 export async function fetchCalendar(
   buildingId: string,
   startIso: string,
