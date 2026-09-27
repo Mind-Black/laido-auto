@@ -53,14 +53,15 @@ async function run() {
     await client.connect();
     console.log('Connected successfully!');
 
-    // 1. Run Initial Schema Migration
-    const schemaPath = path.join(rootDir, 'supabase', 'migrations', '20260927000000_initial_schema.sql');
-    if (fs.existsSync(schemaPath)) {
-      console.log('Applying schema migration (tables, constraints, functions, RLS)...');
-      const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-      await client.query(schemaSql);
-      console.log('Schema migration applied successfully.');
+    // Apply every migration in filename order so fresh databases receive
+    // policy fixes and grants as well as the initial schema.
+    const migrationsDir = path.join(rootDir, 'supabase', 'migrations');
+    const migrations = fs.readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort();
+    for (const name of migrations) {
+      console.log(`Applying ${name}...`);
+      await client.query(fs.readFileSync(path.join(migrationsDir, name), 'utf8'));
     }
+    console.log('All migrations applied successfully.');
 
     // 2. Run Seed (Building, Policy, Chargers)
     const seedPath = path.join(rootDir, 'supabase', 'seed.sql');

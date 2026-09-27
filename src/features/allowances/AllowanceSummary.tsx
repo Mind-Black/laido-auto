@@ -9,13 +9,17 @@ interface Props {
 }
 
 export const AllowanceSummary: React.FC<Props> = ({ allowances, loading }) => {
-  if (loading || !allowances || !allowances.daily || !allowances.weekly) {
+  if (loading) {
     return (
       <div className="flex gap-4 items-center text-sm text-slate-500 animate-pulse">
         <div className="h-6 w-32 bg-slate-200 rounded"></div>
         <div className="h-6 w-32 bg-slate-200 rounded"></div>
       </div>
     );
+  }
+
+  if (!allowances?.daily || !allowances.weekly) {
+    return <div role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Allowance unavailable. Limits are checked when you reserve.</div>;
   }
 
   const dailyPercent = Math.min(100, Math.round((allowances.daily.used_seconds / allowances.daily.limit_seconds) * 100));

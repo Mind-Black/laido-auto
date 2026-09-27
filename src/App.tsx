@@ -86,23 +86,44 @@ export const AppContent: React.FC = () => {
     const currentRequest = ++requestId.current;
     try {
       if (!isConfigured || isLoggedIn) {
-        const [calendarBlocks, userBookings, userAllowances] = await Promise.all([
+        const [calendarResult, bookingsResult, allowancesResult] = await Promise.allSettled([
           fetchCalendar('00000000-0000-0000-0000-000000000001', calendarRange.start, calendarRange.end, currentUser.user_id),
           fetchMyReservations(currentUser.user_id),
           fetchAllowances('00000000-0000-0000-0000-000000000001', currentUser.user_id),
         ]);
 
         if (currentRequest !== requestId.current) return;
-        setBlocks(calendarBlocks);
-        setMyReservations(userBookings);
-        setAllowances(userAllowances);
+        const errors: string[] = [];
+        if (calendarResult.status === 'fulfilled') {
+          setBlocks(calendarResult.value);
+        } else {
+          console.error('Calendar request failed:', calendarResult.reason);
+          errors.push('Availability could not be updated.');
+        }
+        if (bookingsResult.status === 'fulfilled') {
+          setMyReservations(bookingsResult.value);
+        } else {
+          console.error('My bookings request failed:', bookingsResult.reason);
+          errors.push('Your bookings could not be updated.');
+        }
+        if (allowancesResult.status === 'fulfilled') {
+          setAllowances(allowancesResult.value);
+        } else {
+          console.error('Allowance request failed:', allowancesResult.reason);
+          setAllowances(null);
+          errors.push('Your allowance is unavailable; limits will be checked when you reserve.');
+        }
+        const sessionExpired = [calendarResult, bookingsResult, allowancesResult].some(
+          (result) => result.status === 'rejected' && /NOT_AUTHENTICATED|JWT expired|invalid jwt/i.test(String(result.reason?.message || result.reason))
+        );
+        setLoadError(sessionExpired ? 'Your session may have expired. Sign out and sign in again.' : errors.join(' ') || null);
       } else {
         if (currentRequest !== requestId.current) return;
         setBlocks([]);
         setMyReservations([]);
         setAllowances(null);
+        setLoadError(null);
       }
-      setLoadError(null);
     } catch (err: unknown) {
       console.error('Error loading data:', err);
       if (currentRequest === requestId.current) {
