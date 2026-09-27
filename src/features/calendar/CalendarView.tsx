@@ -44,7 +44,7 @@ export const CalendarView: React.FC<Props> = ({
 
   // Sync selected charger
   useEffect(() => {
-    if (!selectedChargerId && chargers.length > 0) {
+    if (chargers.length > 0 && !chargers.some((charger) => charger.id === selectedChargerId)) {
       setSelectedChargerId(chargers[0].id);
     }
   }, [chargers, selectedChargerId]);
@@ -166,47 +166,47 @@ export const CalendarView: React.FC<Props> = ({
   const currentTimeTop = (currentMinutesFromMidnight / 60) * HOUR_HEIGHT;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[min(750px,80vh)] min-h-[480px]">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[min(750px,80dvh)] min-h-[480px]">
       {/* Control bar */}
-      <div className="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
+      <div className="p-3 sm:p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
         {/* Navigation */}
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
             <button
               onClick={handlePrev}
-              className="p-1.5 hover:bg-slate-100 text-slate-600 transition-colors"
+              className="flex h-11 w-11 items-center justify-center hover:bg-slate-100 text-slate-600 transition-colors"
               aria-label="Previous period"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
               onClick={handleToday}
-              className="px-3 py-1.5 text-xs font-semibold hover:bg-slate-100 text-slate-700 border-x border-slate-200 transition-colors"
+              className="h-11 px-3 text-xs font-semibold hover:bg-slate-100 text-slate-700 border-x border-slate-200 transition-colors"
             >
               Today
             </button>
             <button
               onClick={handleNext}
-              className="p-1.5 hover:bg-slate-100 text-slate-600 transition-colors"
+              className="flex h-11 w-11 items-center justify-center hover:bg-slate-100 text-slate-600 transition-colors"
               aria-label="Next period"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
 
-          <span className="text-sm font-semibold text-slate-800 ml-1">
+          <span className="min-w-0 text-sm font-semibold text-slate-800 sm:ml-1">
             {dateRangeLabel}
           </span>
         </div>
 
         {/* View and Charger controls */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">
           {/* Day / Week Switcher */}
           <div className="flex items-center bg-slate-200/80 p-0.5 rounded-lg text-xs font-semibold text-slate-700">
             <button
               onClick={() => setViewMode('day')}
               aria-pressed={viewMode === 'day'}
-              className={`px-3 py-1.5 rounded-md transition-all ${
+              className={`min-h-11 px-4 rounded-md transition-all ${
                 viewMode === 'day' ? 'bg-white shadow-xs text-blue-600' : 'hover:text-slate-900'
               }`}
             >
@@ -215,7 +215,7 @@ export const CalendarView: React.FC<Props> = ({
             <button
               onClick={() => setViewMode('week')}
               aria-pressed={viewMode === 'week'}
-              className={`px-3 py-1.5 rounded-md transition-all ${
+              className={`min-h-11 px-4 rounded-md transition-all ${
                 viewMode === 'week' ? 'bg-white shadow-xs text-blue-600' : 'hover:text-slate-900'
               }`}
             >
@@ -223,15 +223,15 @@ export const CalendarView: React.FC<Props> = ({
             </button>
           </div>
 
-          {/* Charger select in Week view */}
-          {viewMode === 'week' && (
-            <div className="flex items-center bg-slate-200/80 p-0.5 rounded-lg text-xs font-semibold text-slate-700">
+          {/* On phones, show one roomy charger column at a time in Day view. */}
+          {(viewMode === 'week' || chargers.length > 1) && (
+            <div className={`${viewMode === 'day' ? 'sm:hidden ' : ''}flex w-full min-w-0 items-center rounded-lg bg-slate-200/80 p-0.5 text-xs font-semibold text-slate-700 sm:w-auto`}>
               {chargers.map((c) => (
                 <button
                   key={c.id}
                   onClick={() => setSelectedChargerId(c.id)}
                   aria-pressed={selectedChargerId === c.id}
-                  className={`px-3 py-1.5 rounded-md transition-all ${
+                  className={`min-h-11 min-w-0 flex-1 truncate px-2 rounded-md transition-all sm:flex-none sm:px-3 ${
                     selectedChargerId === c.id ? 'bg-white shadow-xs text-blue-600' : 'hover:text-slate-900'
                   }`}
                 >
@@ -244,9 +244,9 @@ export const CalendarView: React.FC<Props> = ({
       </div>
 
       {/* Allowance Window Banner */}
-      <div className="px-4 py-1.5 bg-blue-50/50 border-b border-slate-100 flex flex-wrap items-center justify-between gap-1 text-[11px] text-slate-500">
-        <div className="flex items-center gap-2">
-          <span className="inline-block w-2.5 h-2.5 bg-blue-100 border border-blue-300 rounded-xs"></span>
+      <div className="px-3 sm:px-4 py-1.5 bg-blue-50/50 border-b border-slate-100 flex flex-wrap items-center justify-between gap-1 text-[11px] text-slate-500">
+        <div className="flex items-start gap-2">
+          <span className="mt-0.5 inline-block w-2.5 h-2.5 shrink-0 bg-blue-100 border border-blue-300 rounded-xs"></span>
           <span>Shaded window: Monday–Friday 08:00–17:00 (counts toward 4h daily / 12h weekly allowance)</span>
         </div>
         <span className="font-mono text-slate-500" role="status">{loading ? 'Updating availability…' : `All times in ${DEFAULT_TIMEZONE}`}</span>
@@ -254,7 +254,7 @@ export const CalendarView: React.FC<Props> = ({
 
       {/* Calendar Grid Container */}
       <div ref={containerRef} className="flex-1 overflow-auto relative select-none">
-        <div className={`${viewMode === 'week' ? 'min-w-[650px]' : 'min-w-[320px]'} flex flex-col`}>
+        <div className={`${viewMode === 'week' ? 'min-w-[650px]' : 'min-w-0'} flex flex-col`}>
           {/* Day / Charger Headers */}
           <div className="sticky top-0 z-20 flex bg-white border-b border-slate-200 shadow-xs">
             {/* Time column header */}
@@ -265,11 +265,11 @@ export const CalendarView: React.FC<Props> = ({
             {/* Columns headers */}
             {viewMode === 'day' ? (
               // Day View: show both chargers side by side
-              <div className="flex-1 grid grid-cols-2">
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2">
                 {chargers.map((c) => (
                   <div
                     key={c.id}
-                    className="p-2 text-center text-xs font-semibold text-slate-700 border-r border-slate-200 last:border-r-0 bg-slate-50/80"
+                    className={`${c.id !== selectedChargerId ? 'hidden sm:block ' : ''}min-w-0 p-2 text-center text-xs font-semibold text-slate-700 border-r border-slate-200 last:border-r-0 bg-slate-50/80`}
                   >
                     <span>{c.display_name}</span>
                     {!c.enabled && (
@@ -326,7 +326,7 @@ export const CalendarView: React.FC<Props> = ({
             {/* Grid Columns */}
             {viewMode === 'day' ? (
               // Day View: 2 columns for Charger 1 and Charger 2
-              <div className="flex-1 grid grid-cols-2 relative">
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 relative">
                 {chargers.map((c) => {
                   const dayDt = daysToRender[0];
                   const dayStr = dayDt.toISODate()!;
@@ -345,7 +345,7 @@ export const CalendarView: React.FC<Props> = ({
                   return (
                     <div
                       key={c.id}
-                      className={`border-r border-slate-200 last:border-r-0 relative ${!c.enabled ? 'bg-maintenance-stripes' : ''}`}
+                      className={`${c.id !== selectedChargerId ? 'hidden sm:block ' : ''}border-r border-slate-200 last:border-r-0 relative ${!c.enabled ? 'bg-maintenance-stripes' : ''}`}
                     >
                       {/* Weekday 08:00 - 17:00 allowance background shading */}
                       {isWeekday && (

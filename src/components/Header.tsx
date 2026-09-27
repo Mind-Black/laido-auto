@@ -59,10 +59,10 @@ export const Header: React.FC<Props> = ({
               <button
                 onClick={onOpenMyBookings}
                 aria-label="My bookings"
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors cursor-pointer relative"
+                className="inline-flex min-h-11 items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors cursor-pointer relative"
               >
                 <Calendar className="w-4 h-4 text-slate-600" />
-                <span className="hidden md:inline">My bookings</span>
+                <span className="sm:hidden md:inline">Bookings</span>
                 {myBookingsCount > 0 && (
                   <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
                     {myBookingsCount}
@@ -74,7 +74,7 @@ export const Header: React.FC<Props> = ({
                 <button
                   onClick={onOpenAdmin}
                   aria-label="Admin settings"
-                  className="inline-flex items-center gap-1 px-2.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                  className="inline-flex min-h-11 items-center gap-1 px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-medium rounded-lg transition-colors cursor-pointer"
                   title="Admin settings"
                 >
                   <Shield className="w-3.5 h-3.5 text-amber-600" />
@@ -92,7 +92,7 @@ export const Header: React.FC<Props> = ({
                   <span className="text-slate-700 font-medium hidden sm:inline">{currentUser.email}</span>
                   <button
                     onClick={() => signOut()}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-md transition-colors cursor-pointer"
+                    className="inline-flex min-h-11 items-center gap-1 px-2.5 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-md transition-colors cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Sign out</span>
@@ -101,7 +101,7 @@ export const Header: React.FC<Props> = ({
               ) : (
                 <button
                   onClick={onOpenLogin}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md shadow-xs transition-colors cursor-pointer"
+                  className="inline-flex min-h-11 items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md shadow-xs transition-colors cursor-pointer"
                 >
                   <LogIn className="w-3.5 h-3.5" />
                   <span>Sign in</span>

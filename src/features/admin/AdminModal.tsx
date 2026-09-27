@@ -27,22 +27,23 @@ export const AdminModal: React.FC<Props> = ({ isOpen, onClose, chargers, onToggl
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/50">
+    <div role="dialog" aria-modal="true" aria-label="Building administration" className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl border border-slate-200 w-full max-w-lg max-h-[100dvh] sm:max-h-[90dvh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
+        <div className="flex shrink-0 items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-slate-50/50">
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-amber-600" />
             <h2 className="text-lg font-semibold text-slate-900">Building Administration</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+            aria-label="Close administration"
+            className="flex h-11 w-11 items-center justify-center text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-6">
           {errorMessage && <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">{errorMessage}</div>}
           {/* Charger Management */}
           <div>
@@ -53,7 +54,7 @@ export const AdminModal: React.FC<Props> = ({ isOpen, onClose, chargers, onToggl
               {chargers.map((c) => (
                 <div
                   key={c.id}
-                  className="p-3.5 rounded-lg border border-slate-200 flex items-center justify-between bg-slate-50/50"
+                  className="p-3.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50"
                 >
                   <div className="flex items-center gap-3">
                     <div
@@ -74,7 +75,7 @@ export const AdminModal: React.FC<Props> = ({ isOpen, onClose, chargers, onToggl
                   <button
                     onClick={() => handleToggleCharger(c)}
                     disabled={pendingId !== null}
-                    className={`px-3 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition-colors ${
+                    className={`min-h-11 px-3 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition-colors ${
                       c.enabled
                         ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
                         : 'bg-emerald-600 text-white hover:bg-emerald-700'
@@ -101,10 +102,10 @@ export const AdminModal: React.FC<Props> = ({ isOpen, onClose, chargers, onToggl
           </div>
         </div>
 
-        <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+        <div className="shrink-0 p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+            className="min-h-11 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
           >
             Close
           </button>

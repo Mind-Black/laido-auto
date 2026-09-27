@@ -219,10 +219,10 @@ export const BookingModal: React.FC<Props> = ({
   };
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="booking-title" className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-start sm:items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div role="dialog" aria-modal="true" aria-labelledby="booking-title" className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl border border-slate-200 w-full max-w-lg max-h-[100dvh] sm:max-h-[90dvh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/50">
+        <div className="flex shrink-0 items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-slate-50/50">
           <div className="flex items-center gap-2">
             <CalendarIcon className="w-5 h-5 text-blue-600" />
             <h2 id="booking-title" className="text-lg font-semibold text-slate-900">New Reservation</h2>
@@ -230,14 +230,14 @@ export const BookingModal: React.FC<Props> = ({
           <button
             onClick={onClose}
             aria-label="Close reservation form"
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+            className="flex h-11 w-11 items-center justify-center text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4">
           {errorMessage && (
             <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-lg flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
@@ -272,7 +272,7 @@ export const BookingModal: React.FC<Props> = ({
                     key={c.id}
                     disabled={!c.enabled}
                     onClick={() => setChargerId(c.id)}
-                    className={`py-2.5 px-3 rounded-lg border text-sm font-medium transition-all text-left flex items-center justify-between ${
+                    className={`min-h-11 min-w-0 py-2.5 px-3 rounded-lg border text-sm font-medium transition-all text-left flex flex-wrap items-center justify-between gap-1 ${
                       chargerId === c.id
                         ? 'border-blue-600 bg-blue-50/80 text-blue-900 ring-2 ring-blue-500/20'
                         : !c.enabled
@@ -289,8 +289,8 @@ export const BookingModal: React.FC<Props> = ({
           </div>
 
           {/* Start Time */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+          <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
+            <div className="min-w-0">
               <label className="block text-xs font-medium text-slate-600 mb-1">Start Date</label>
               <input
                 type="date"
@@ -303,10 +303,10 @@ export const BookingModal: React.FC<Props> = ({
                     setEndDateStr(e.target.value);
                   }
                 }}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full min-w-0 min-h-11 px-3 py-2 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="block text-xs font-medium text-slate-600 mb-1">Start Time</label>
               <input
                 type="time"
@@ -314,24 +314,24 @@ export const BookingModal: React.FC<Props> = ({
                 required
                 value={startTimeStr}
                 onChange={(e) => setStartTimeStr(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
+                className="w-full min-w-0 min-h-11 px-3 py-2 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
               />
             </div>
           </div>
 
           {/* End Time */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+          <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
+            <div className="min-w-0">
               <label className="block text-xs font-medium text-slate-600 mb-1">End Date</label>
               <input
                 type="date"
                 required
                 value={endDateStr}
                 onChange={(e) => setEndDateStr(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full min-w-0 min-h-11 px-3 py-2 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="block text-xs font-medium text-slate-600 mb-1">End Time</label>
               <input
                 type="time"
@@ -339,7 +339,7 @@ export const BookingModal: React.FC<Props> = ({
                 required
                 value={endTimeStr}
                 onChange={(e) => setEndTimeStr(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
+                className="w-full min-w-0 min-h-11 px-3 py-2 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
               />
             </div>
           </div>
@@ -348,21 +348,21 @@ export const BookingModal: React.FC<Props> = ({
           {calculation && (
             <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 space-y-2 text-xs">
               {allowanceLoading && <p className="text-blue-700" role="status">Checking your allowance for this date…</p>}
-              <div className="flex justify-between items-center text-slate-600">
+              <div className="flex flex-wrap justify-between items-center gap-1 text-slate-600">
                 <span>Total Duration:</span>
                 <span className="font-semibold text-slate-800">
                   {formatDuration(calculation.durationSeconds || 0)}
                 </span>
               </div>
 
-              <div className="flex justify-between items-center text-slate-600">
+              <div className="flex flex-wrap justify-between items-center gap-1 text-slate-600">
                 <span>Counts toward allowance (Mon–Fri 08:00–17:00):</span>
                 <span className="font-semibold text-blue-700">
                   {formatDuration(calculation.countedSeconds || 0)}
                 </span>
               </div>
 
-              <div className="flex justify-between items-center text-slate-600">
+              <div className="flex flex-wrap justify-between items-center gap-1 text-slate-600">
                 <span>Check-in deadline (15m grace):</span>
                 <span className="font-mono text-amber-700">
                   {calculation.deadlineIso ? formatDateTimeInZone(calculation.deadlineIso) : '—'}
@@ -385,7 +385,7 @@ export const BookingModal: React.FC<Props> = ({
                 type="button"
                 onClick={handleBookNow}
                 disabled={submitting}
-                className="w-full py-2 px-3 border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="w-full min-h-11 py-2 px-3 border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Zap className="w-3.5 h-3.5 fill-emerald-600 text-emerald-600" />
                 Book now (1 hour & start charging immediately)
@@ -394,18 +394,18 @@ export const BookingModal: React.FC<Props> = ({
           )}
 
           {/* Footer buttons */}
-          <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-3">
+          <div className="sticky bottom-[-1rem] sm:bottom-[-1.5rem] -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 border-t border-slate-200 bg-white p-4 sm:p-6 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              className="min-h-11 flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || !calculation?.valid}
-              className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="min-h-11 flex-1 sm:flex-none px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Clock className="w-4 h-4" />
               {submitting ? 'Reserving...' : 'Reserve'}

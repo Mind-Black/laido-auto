@@ -272,10 +272,10 @@ export const AppContent: React.FC = () => {
       />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-5">
         {/* Unauthenticated notice in live Supabase mode */}
         {isConfigured && !isLoggedIn && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between gap-4 text-xs text-blue-950">
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 text-xs text-blue-950">
             <div>
               <div className="font-semibold text-sm mb-0.5">Welcome to Laido Building 1 EV Charging</div>
               <p className="text-blue-800">
@@ -284,7 +284,7 @@ export const AppContent: React.FC = () => {
             </div>
             <button
               onClick={() => setIsLoginOpen(true)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
+              className="min-h-11 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-xs flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
             >
               <LogIn className="w-4 h-4" />
               <span>Sign in</span>
@@ -293,9 +293,9 @@ export const AppContent: React.FC = () => {
         )}
 
         {(loadError || chargerError) && (
-          <div role="alert" className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between gap-3 text-sm text-rose-900">
-            <span className="flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" />{loadError || chargerError}</span>
-            <button onClick={() => { loadData(); getChargers().then((list) => { setChargers(list); setChargerError(null); }).catch(() => setChargerError('Chargers could not be loaded. Please retry.')); }} className="shrink-0 font-semibold underline underline-offset-2">Retry</button>
+          <div role="alert" className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex flex-wrap items-center justify-between gap-3 text-sm text-rose-900">
+            <span className="flex min-w-0 items-start gap-2"><AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />{loadError || chargerError}</span>
+            <button onClick={() => { loadData(); getChargers().then((list) => { setChargers(list); setChargerError(null); }).catch(() => setChargerError('Chargers could not be loaded. Please retry.')); }} className="min-h-10 shrink-0 font-semibold underline underline-offset-2">Retry</button>
           </div>
         )}
 
@@ -313,7 +313,7 @@ export const AppContent: React.FC = () => {
         {isLoggedIn && <AllowanceSummary allowances={allowances} loading={loading} />}
 
         {isLoggedIn && (
-          <button onClick={handleOpenNewBooking} className="sm:hidden w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm active:bg-blue-700">
+          <button onClick={handleOpenNewBooking} className="sm:hidden w-full min-h-12 flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm active:bg-blue-700">
             <Plus className="w-4 h-4" /> New booking
           </button>
         )}
@@ -372,7 +372,7 @@ export const AppContent: React.FC = () => {
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div role="status" aria-live="polite" className="fixed bottom-5 right-5 z-50 animate-in slide-in-from-bottom-5">
+        <div role="status" aria-live="polite" className="fixed bottom-4 left-4 right-4 sm:bottom-5 sm:left-auto sm:right-5 z-50 animate-in slide-in-from-bottom-5">
           <div
             className={`px-4 py-2.5 rounded-lg shadow-lg text-xs font-semibold flex items-center gap-2 border ${
               toastMessage.type === 'error'

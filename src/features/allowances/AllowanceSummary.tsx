@@ -26,8 +26,8 @@ export const AllowanceSummary: React.FC<Props> = ({ allowances, loading }) => {
   const weeklyPercent = Math.min(100, Math.round((allowances.weekly.used_seconds / allowances.weekly.limit_seconds) * 100));
 
   return (
-    <div className="flex flex-wrap items-center gap-4 bg-white p-3 rounded-lg border border-slate-200 shadow-sm text-sm">
-      <div className="flex items-center gap-1.5 text-slate-700 font-medium mr-1">
+    <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-4 bg-white p-3 rounded-lg border border-slate-200 shadow-sm text-sm">
+      <div className="flex items-center gap-1.5 text-slate-700 font-medium sm:mr-1">
         <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
         <span>Allowance:</span>
       </div>
@@ -38,7 +38,7 @@ export const AllowanceSummary: React.FC<Props> = ({ allowances, loading }) => {
         <span className="font-semibold text-slate-800">
           {formatDuration(allowances.daily.used_seconds)} / {formatDuration(allowances.daily.limit_seconds)}
         </span>
-        <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+        <div className="w-16 h-2 ml-auto sm:ml-0 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
           <div
             className={`h-full transition-all duration-300 ${
               dailyPercent > 90 ? 'bg-rose-500' : dailyPercent > 70 ? 'bg-amber-500' : 'bg-blue-600'
@@ -56,7 +56,7 @@ export const AllowanceSummary: React.FC<Props> = ({ allowances, loading }) => {
         <span className="font-semibold text-slate-800">
           {formatDuration(allowances.weekly.used_seconds)} / {formatDuration(allowances.weekly.limit_seconds)}
         </span>
-        <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+        <div className="w-16 h-2 ml-auto sm:ml-0 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
           <div
             className={`h-full transition-all duration-300 ${
               weeklyPercent > 90 ? 'bg-rose-500' : weeklyPercent > 70 ? 'bg-amber-500' : 'bg-blue-600'
