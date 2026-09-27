@@ -11,7 +11,8 @@ import { ChevronLeft, ChevronRight, Clock, Zap } from 'lucide-react';
 interface Props {
   chargers: Charger[];
   blocks: CalendarBlock[];
-  currentUserId: string;
+  loading?: boolean;
+  onRangeChange: (startIso: string, endIso: string) => void;
   onSelectSlot: (chargerId: string, startIso: string, endIso: string) => void;
   onSelectExistingBooking?: (block: CalendarBlock) => void;
 }
@@ -22,12 +23,16 @@ const HOUR_HEIGHT = 64; // pixels per hour (16px per 15-min slot)
 export const CalendarView: React.FC<Props> = ({
   chargers,
   blocks,
-  currentUserId,
+  loading = false,
+  onRangeChange,
   onSelectSlot,
   onSelectExistingBooking,
 }) => {
-  const [viewMode, setViewMode] = useState<'day' | 'week'>('week');
+  const [viewMode, setViewMode] = useState<'day' | 'week'>(() =>
+    typeof window !== 'undefined' && window.matchMedia?.('(max-width: 639px)').matches ? 'day' : 'week'
+  );
   const [selectedChargerId, setSelectedChargerId] = useState<string>(chargers[0]?.id || '');
+  const selectedChargerEnabled = chargers.some((charger) => charger.id === selectedChargerId && charger.enabled);
   const [currentDate, setCurrentDate] = useState<DateTime>(DateTime.now().setZone(DEFAULT_TIMEZONE));
   
   // Drag selection state
@@ -44,10 +49,11 @@ export const CalendarView: React.FC<Props> = ({
     }
   }, [chargers, selectedChargerId]);
 
-  // Initial scroll to 08:00
+  // Put the next available hours in view on first open.
   useEffect(() => {
     if (containerRef.current) {
-      containerRef.current.scrollTop = 8 * HOUR_HEIGHT - 32;
+      const hour = DateTime.now().setZone(DEFAULT_TIMEZONE).hour;
+      containerRef.current.scrollTop = Math.max(0, Math.min(21, hour - 1)) * HOUR_HEIGHT;
     }
   }, []);
 
@@ -61,6 +67,10 @@ export const CalendarView: React.FC<Props> = ({
     // Week view: 7 days Mon-Sun
     return Array.from({ length: 7 }, (_, i) => weekStart.plus({ days: i }));
   }, [viewMode, currentDate, weekStart]);
+
+  const rangeStart = (viewMode === 'day' ? currentDate.startOf('day').minus({ days: 1 }) : weekStart.minus({ weeks: 1 })).toUTC().toISO()!;
+  const rangeEnd = (viewMode === 'day' ? currentDate.startOf('day').plus({ days: 2 }) : weekStart.plus({ weeks: 2 })).toUTC().toISO()!;
+  useEffect(() => onRangeChange(rangeStart, rangeEnd), [onRangeChange, rangeStart, rangeEnd]);
 
   // Header display string
   const dateRangeLabel = useMemo(() => {
@@ -82,6 +92,10 @@ export const CalendarView: React.FC<Props> = ({
 
   const handleToday = () => {
     setCurrentDate(DateTime.now().setZone(DEFAULT_TIMEZONE));
+    if (containerRef.current) {
+      const hour = DateTime.now().setZone(DEFAULT_TIMEZONE).hour;
+      containerRef.current.scrollTop = Math.max(0, Math.min(21, hour - 1)) * HOUR_HEIGHT;
+    }
   };
 
   // Drag interaction handlers
@@ -133,7 +147,16 @@ export const CalendarView: React.FC<Props> = ({
 
   useEffect(() => {
     window.addEventListener('pointerup', handlePointerUp);
-    return () => window.removeEventListener('pointerup', handlePointerUp);
+    const cancelDrag = () => {
+      setIsDragging(false);
+      setDragStartSlot(null);
+      setDragEndSlot(null);
+    };
+    window.addEventListener('pointercancel', cancelDrag);
+    return () => {
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', cancelDrag);
+    };
   }, [handlePointerUp]);
 
   // Current time position (minutes from midnight)
@@ -143,7 +166,7 @@ export const CalendarView: React.FC<Props> = ({
   const currentTimeTop = (currentMinutesFromMidnight / 60) * HOUR_HEIGHT;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[750px]">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[min(750px,80vh)] min-h-[480px]">
       {/* Control bar */}
       <div className="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
         {/* Navigation */}
@@ -177,11 +200,12 @@ export const CalendarView: React.FC<Props> = ({
         </div>
 
         {/* View and Charger controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* Day / Week Switcher */}
           <div className="flex items-center bg-slate-200/80 p-0.5 rounded-lg text-xs font-semibold text-slate-700">
             <button
               onClick={() => setViewMode('day')}
+              aria-pressed={viewMode === 'day'}
               className={`px-3 py-1.5 rounded-md transition-all ${
                 viewMode === 'day' ? 'bg-white shadow-xs text-blue-600' : 'hover:text-slate-900'
               }`}
@@ -190,6 +214,7 @@ export const CalendarView: React.FC<Props> = ({
             </button>
             <button
               onClick={() => setViewMode('week')}
+              aria-pressed={viewMode === 'week'}
               className={`px-3 py-1.5 rounded-md transition-all ${
                 viewMode === 'week' ? 'bg-white shadow-xs text-blue-600' : 'hover:text-slate-900'
               }`}
@@ -205,6 +230,7 @@ export const CalendarView: React.FC<Props> = ({
                 <button
                   key={c.id}
                   onClick={() => setSelectedChargerId(c.id)}
+                  aria-pressed={selectedChargerId === c.id}
                   className={`px-3 py-1.5 rounded-md transition-all ${
                     selectedChargerId === c.id ? 'bg-white shadow-xs text-blue-600' : 'hover:text-slate-900'
                   }`}
@@ -218,17 +244,17 @@ export const CalendarView: React.FC<Props> = ({
       </div>
 
       {/* Allowance Window Banner */}
-      <div className="px-4 py-1.5 bg-blue-50/50 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+      <div className="px-4 py-1.5 bg-blue-50/50 border-b border-slate-100 flex flex-wrap items-center justify-between gap-1 text-[11px] text-slate-500">
         <div className="flex items-center gap-2">
           <span className="inline-block w-2.5 h-2.5 bg-blue-100 border border-blue-300 rounded-xs"></span>
           <span>Shaded window: Monday–Friday 08:00–17:00 (counts toward 4h daily / 12h weekly allowance)</span>
         </div>
-        <span className="font-mono text-slate-400">All times in {DEFAULT_TIMEZONE}</span>
+        <span className="font-mono text-slate-500" role="status">{loading ? 'Updating availability…' : `All times in ${DEFAULT_TIMEZONE}`}</span>
       </div>
 
       {/* Calendar Grid Container */}
-      <div ref={containerRef} className="flex-1 overflow-y-auto relative select-none">
-        <div className="min-w-[650px] flex flex-col">
+      <div ref={containerRef} className="flex-1 overflow-auto relative select-none">
+        <div className={`${viewMode === 'week' ? 'min-w-[650px]' : 'min-w-[320px]'} flex flex-col`}>
           {/* Day / Charger Headers */}
           <div className="sticky top-0 z-20 flex bg-white border-b border-slate-200 shadow-xs">
             {/* Time column header */}
@@ -305,6 +331,8 @@ export const CalendarView: React.FC<Props> = ({
                   const dayDt = daysToRender[0];
                   const dayStr = dayDt.toISODate()!;
                   const isWeekday = dayDt.weekday >= 1 && dayDt.weekday <= 5;
+                  const isPastDay = dayDt < now.startOf('day');
+                  const isToday = dayDt.hasSame(now, 'day');
 
                   // Filter blocks for this charger and day
                   const chargerBlocks = blocks.filter((b) => {
@@ -317,7 +345,7 @@ export const CalendarView: React.FC<Props> = ({
                   return (
                     <div
                       key={c.id}
-                      className="border-r border-slate-200 last:border-r-0 relative"
+                      className={`border-r border-slate-200 last:border-r-0 relative ${!c.enabled ? 'bg-maintenance-stripes' : ''}`}
                     >
                       {/* Weekday 08:00 - 17:00 allowance background shading */}
                       {isWeekday && (
@@ -336,9 +364,9 @@ export const CalendarView: React.FC<Props> = ({
                           {[0, 1, 2, 3].map((quarter) => (
                             <div
                               key={quarter}
-                              onPointerDown={() => handlePointerDown(dayStr, hour, quarter, c.id)}
-                              onPointerEnter={() => handlePointerEnter(dayStr, hour, quarter)}
-                              className="h-4 hover:bg-blue-50/40 transition-colors cursor-pointer"
+                              onPointerDown={c.enabled && !loading && !isPastDay && !(isToday && hour * 60 + quarter * 15 <= now.hour * 60 + now.minute) ? () => handlePointerDown(dayStr, hour, quarter, c.id) : undefined}
+                              onPointerEnter={c.enabled ? () => handlePointerEnter(dayStr, hour, quarter) : undefined}
+                              className={`h-4 ${c.enabled && !loading && !isPastDay && !(isToday && hour * 60 + quarter * 15 <= now.hour * 60 + now.minute) ? 'hover:bg-blue-50/40 cursor-pointer' : 'cursor-not-allowed'}`}
                             />
                           ))}
                         </div>
@@ -350,7 +378,6 @@ export const CalendarView: React.FC<Props> = ({
                           key={b.id || `${b.charger_id}-${b.start_time}`}
                           block={b}
                           dayDt={dayDt}
-                          currentUserId={currentUserId}
                           onClick={() => onSelectExistingBooking?.(b)}
                         />
                       ))}
@@ -372,6 +399,8 @@ export const CalendarView: React.FC<Props> = ({
                 {daysToRender.map((dayDt) => {
                   const dayStr = dayDt.toISODate()!;
                   const isWeekday = dayDt.weekday >= 1 && dayDt.weekday <= 5;
+                  const isPastDay = dayDt < now.startOf('day');
+                  const isToday = dayDt.hasSame(now, 'day');
 
                   const colBlocks = blocks.filter((b) => {
                     if (b.charger_id !== selectedChargerId) return false;
@@ -383,7 +412,7 @@ export const CalendarView: React.FC<Props> = ({
                   return (
                     <div
                       key={dayStr}
-                      className="border-r border-slate-200 last:border-r-0 relative"
+                      className={`border-r border-slate-200 last:border-r-0 relative ${!selectedChargerEnabled ? 'bg-maintenance-stripes' : ''}`}
                     >
                       {/* Weekday 08:00 - 17:00 allowance window shading */}
                       {isWeekday && (
@@ -402,9 +431,9 @@ export const CalendarView: React.FC<Props> = ({
                           {[0, 1, 2, 3].map((quarter) => (
                             <div
                               key={quarter}
-                              onPointerDown={() => handlePointerDown(dayStr, hour, quarter, selectedChargerId)}
-                              onPointerEnter={() => handlePointerEnter(dayStr, hour, quarter)}
-                              className="h-4 hover:bg-blue-50/40 transition-colors cursor-pointer"
+                              onPointerDown={selectedChargerEnabled && !loading && !isPastDay && !(isToday && hour * 60 + quarter * 15 <= now.hour * 60 + now.minute) ? () => handlePointerDown(dayStr, hour, quarter, selectedChargerId) : undefined}
+                              onPointerEnter={selectedChargerEnabled ? () => handlePointerEnter(dayStr, hour, quarter) : undefined}
+                              className={`h-4 ${selectedChargerEnabled && !loading && !isPastDay && !(isToday && hour * 60 + quarter * 15 <= now.hour * 60 + now.minute) ? 'hover:bg-blue-50/40 cursor-pointer' : 'cursor-not-allowed'}`}
                             />
                           ))}
                         </div>
@@ -416,7 +445,6 @@ export const CalendarView: React.FC<Props> = ({
                           key={b.id || `${b.charger_id}-${b.start_time}`}
                           block={b}
                           dayDt={dayDt}
-                          currentUserId={currentUserId}
                           onClick={() => onSelectExistingBooking?.(b)}
                         />
                       ))}
@@ -454,7 +482,6 @@ export const CalendarView: React.FC<Props> = ({
 const RenderBookingBlock: React.FC<{
   block: CalendarBlock;
   dayDt: DateTime;
-  currentUserId: string;
   onClick: () => void;
 }> = ({ block, dayDt, onClick }) => {
   const bStart = DateTime.fromISO(block.start_time, { zone: DEFAULT_TIMEZONE });
@@ -491,25 +518,28 @@ const RenderBookingBlock: React.FC<{
   }
 
   return (
-    <div
+    <button
+      type="button"
+      disabled={!block.is_own}
+      aria-label={block.is_own ? `My booking, ${formatTimeInZone(block.start_time)} to ${formatTimeInZone(block.effective_end_time)}` : undefined}
       onClick={(e) => {
         e.stopPropagation();
         onClick();
       }}
-      className={`absolute inset-x-1 rounded-md border p-1 text-xs cursor-pointer shadow-xs transition-all overflow-hidden flex flex-col justify-between ${bgClass}`}
+      className={`absolute inset-x-1 rounded-md border p-1 text-xs text-left shadow-xs transition-all overflow-hidden flex flex-col justify-between ${block.is_own ? 'cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600' : 'cursor-default'} ${bgClass}`}
       style={{ top: `${top}px`, height: `${height}px` }}
       title={`${formatTimeInZone(block.start_time)} - ${formatTimeInZone(block.effective_end_time)} (${block.status})`}
     >
-      <div className="flex items-center justify-between gap-1">
+      <span className="flex items-center justify-between gap-1">
         <span className="font-semibold truncate">
           {block.is_own ? 'My Booking' : 'Reserved'}
         </span>
         {isCheckedIn && <Zap className="w-3 h-3 text-emerald-600 fill-emerald-600 shrink-0" />}
-      </div>
-      <div className="text-[10px] font-mono opacity-80 truncate">
+      </span>
+      <span className="text-[10px] font-mono opacity-80 truncate">
         {formatTimeInZone(block.start_time)}–{formatTimeInZone(block.effective_end_time)}
-      </div>
-    </div>
+      </span>
+    </button>
   );
 };
 

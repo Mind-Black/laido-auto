@@ -1,10 +1,19 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { StatusBadge } from '../components/StatusBadge';
 import { AllowanceSummary } from '../features/allowances/AllowanceSummary';
 import { ActiveBookingBanner } from '../features/bookings/ActiveBookingBanner';
+import { CalendarView } from '../features/calendar/CalendarView';
+import { BookingModal } from '../features/bookings/BookingModal';
+import { AuthProvider } from '../features/auth/AuthContext';
+import { fetchAllowances } from '../lib/api';
 import { Reservation, Charger } from '../lib/types';
 import { DateTime } from 'luxon';
+
+vi.mock('../lib/api', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../lib/api')>();
+  return { ...original, fetchAllowances: vi.fn() };
+});
 
 describe('StatusBadge component', () => {
   it('renders Charging badge for checked_in status', () => {
@@ -125,5 +134,56 @@ describe('ActiveBookingBanner component', () => {
       fireEvent.click(button);
     });
     expect(handleFinishEarly).toHaveBeenCalledWith('res-test-2');
+  });
+});
+
+describe('CalendarView navigation', () => {
+  it('requests a new availability range when moving to another week', () => {
+    const onRangeChange = vi.fn();
+    render(
+      <CalendarView
+        chargers={[{ id: 'c1', building_id: 'b1', display_name: 'Charger 1', enabled: true }]}
+        blocks={[]}
+        onRangeChange={onRangeChange}
+        onSelectSlot={vi.fn()}
+      />
+    );
+
+    const firstRange = onRangeChange.mock.lastCall;
+    fireEvent.click(screen.getByRole('button', { name: 'Next period' }));
+    const nextRange = onRangeChange.mock.lastCall;
+
+    expect(nextRange).not.toEqual(firstRange);
+    expect(DateTime.fromISO(nextRange![0]).diff(DateTime.fromISO(firstRange![0]), 'days').days).toBe(7);
+  });
+});
+
+describe('BookingModal allowance preview', () => {
+  it('uses the selected date allowance instead of today’s balance', async () => {
+    vi.mocked(fetchAllowances).mockResolvedValue({
+      daily: { used_seconds: 0, limit_seconds: 14400, remaining_seconds: 14400 },
+      weekly: { used_seconds: 0, limit_seconds: 43200, remaining_seconds: 43200 },
+    });
+    const start = DateTime.now().setZone('Europe/Kyiv').plus({ days: 7 }).startOf('day').plus({ hours: 10 });
+    render(
+      <AuthProvider>
+        <BookingModal
+          isOpen
+          onClose={vi.fn()}
+          chargers={[{ id: 'c1', building_id: 'b1', display_name: 'Charger 1', enabled: true }]}
+          selectedChargerId="c1"
+          initialStartTime={start.toUTC().toISO()!}
+          initialEndTime={start.plus({ hours: 1 }).toUTC().toISO()!}
+          allowances={{
+            daily: { used_seconds: 14400, limit_seconds: 14400, remaining_seconds: 0 },
+            weekly: { used_seconds: 43200, limit_seconds: 43200, remaining_seconds: 0 },
+          }}
+          onConfirmReservation={vi.fn()}
+        />
+      </AuthProvider>
+    );
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Reserve' })).toBeEnabled());
+    expect(fetchAllowances).toHaveBeenCalled();
   });
 });

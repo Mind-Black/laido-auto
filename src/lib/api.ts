@@ -48,11 +48,12 @@ export async function fetchAllowances(
   dateIso?: string
 ): Promise<AllowanceSummary> {
   if (isSupabaseConfigured && supabase) {
-    // If Supabase RPC get_my_allowances exists
     const { data, error } = await supabase.rpc('get_my_allowances', {
       p_date: dateIso || null,
     });
-    if (!error && data) return data;
+    if (error) throw error;
+    if (!data) throw new Error('Allowance data is unavailable.');
+    return data;
   }
   return mockStore.getAllowances(userId, dateIso);
 }

@@ -11,6 +11,8 @@ import {
 } from '../../lib/time';
 import { DateTime } from 'luxon';
 import { X, Calendar as CalendarIcon, Clock, Zap, AlertCircle } from 'lucide-react';
+import { fetchAllowances } from '../../lib/api';
+import { useAuth } from '../auth/AuthContext';
 
 interface Props {
   isOpen: boolean;
@@ -35,6 +37,7 @@ export const BookingModal: React.FC<Props> = ({
   onConfirmReservation,
   onBookNow,
 }) => {
+  const { currentUser } = useAuth();
   const [chargerId, setChargerId] = useState(selectedChargerId);
   const [startDateStr, setStartDateStr] = useState('');
   const [startTimeStr, setStartTimeStr] = useState('09:00');
@@ -42,8 +45,22 @@ export const BookingModal: React.FC<Props> = ({
   const [endTimeStr, setEndTimeStr] = useState('11:00');
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [dateAllowances, setDateAllowances] = useState<AllowanceSummary | null>(null);
+  const [allowanceDate, setAllowanceDate] = useState('');
+  const [allowanceLoading, setAllowanceLoading] = useState(false);
+  const [allowanceError, setAllowanceError] = useState(false);
+  const [allowanceErrorDate, setAllowanceErrorDate] = useState('');
 
   // Initialize or reset form when opened
+  useEffect(() => {
+    if (!isOpen) return;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !submitting) onClose();
+    };
+    window.addEventListener('keydown', onEscape);
+    return () => window.removeEventListener('keydown', onEscape);
+  }, [isOpen, onClose, submitting]);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -73,6 +90,32 @@ export const BookingModal: React.FC<Props> = ({
     setEndTimeStr(endDt.toFormat('HH:mm'));
     setErrorMessage(null);
   }, [isOpen, initialStartTime, initialEndTime, selectedChargerId, chargers]);
+
+  useEffect(() => {
+    if (!isOpen || !startDateStr) return;
+    const today = DateTime.now().setZone(DEFAULT_TIMEZONE).toISODate();
+    if (startDateStr === today && allowances) {
+      setDateAllowances(allowances);
+      setAllowanceDate(startDateStr);
+      setAllowanceLoading(false);
+      setAllowanceError(false);
+      setAllowanceErrorDate('');
+      return;
+    }
+
+    let active = true;
+    setDateAllowances(null);
+    setAllowanceDate('');
+    setAllowanceLoading(true);
+    setAllowanceError(false);
+    setAllowanceErrorDate('');
+    const targetDate = DateTime.fromISO(startDateStr, { zone: DEFAULT_TIMEZONE }).set({ hour: 12 }).toUTC().toISO()!;
+    fetchAllowances('00000000-0000-0000-0000-000000000001', currentUser.user_id, targetDate)
+      .then((result) => { if (active) { setDateAllowances(result); setAllowanceDate(startDateStr); } })
+      .catch(() => { if (active) { setAllowanceError(true); setAllowanceErrorDate(startDateStr); } })
+      .finally(() => { if (active) setAllowanceLoading(false); });
+    return () => { active = false; };
+  }, [isOpen, startDateStr, allowances, currentUser.user_id]);
 
   // Construct ISO timestamps
   const startIso = useMemo(() => {
@@ -111,11 +154,12 @@ export const BookingModal: React.FC<Props> = ({
     const deadlineIso = computeCheckinDeadline(startIso);
 
     // Allowance check
-    const dailyUsed = allowances?.daily.used_seconds || 0;
-    const weeklyUsed = allowances?.weekly.used_seconds || 0;
+    const currentAllowances = allowanceDate === startDateStr ? dateAllowances : null;
+    const dailyUsed = currentAllowances?.daily.used_seconds || 0;
+    const weeklyUsed = currentAllowances?.weekly.used_seconds || 0;
 
-    const dailyExceeded = dailyUsed + countedSeconds > DAILY_LIMIT_SECONDS;
-    const weeklyExceeded = weeklyUsed + countedSeconds > WEEKLY_LIMIT_SECONDS;
+    const dailyExceeded = Boolean(currentAllowances) && dailyUsed + countedSeconds > DAILY_LIMIT_SECONDS;
+    const weeklyExceeded = Boolean(currentAllowances) && weeklyUsed + countedSeconds > WEEKLY_LIMIT_SECONDS;
 
     let error: string | undefined;
     if (dailyExceeded) {
@@ -129,7 +173,7 @@ export const BookingModal: React.FC<Props> = ({
     }
 
     return {
-      valid: !dailyExceeded && !weeklyExceeded,
+      valid: !allowanceLoading && (Boolean(currentAllowances) || (allowanceError && allowanceErrorDate === startDateStr)) && !dailyExceeded && !weeklyExceeded,
       durationSeconds,
       countedSeconds,
       deadlineIso,
@@ -137,7 +181,7 @@ export const BookingModal: React.FC<Props> = ({
       weeklyUsedAfter: weeklyUsed + countedSeconds,
       error,
     };
-  }, [startIso, endIso, allowances, chargerId]);
+  }, [startIso, endIso, dateAllowances, allowanceDate, startDateStr, allowanceLoading, allowanceError, allowanceErrorDate, chargerId]);
 
   if (!isOpen) return null;
 
@@ -175,16 +219,17 @@ export const BookingModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" aria-labelledby="booking-title" className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-start sm:items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/50">
           <div className="flex items-center gap-2">
             <CalendarIcon className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-slate-900">New Reservation</h2>
+            <h2 id="booking-title" className="text-lg font-semibold text-slate-900">New Reservation</h2>
           </div>
           <button
             onClick={onClose}
+            aria-label="Close reservation form"
             className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -198,6 +243,10 @@ export const BookingModal: React.FC<Props> = ({
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
               <span>{errorMessage}</span>
             </div>
+          )}
+
+          {allowanceError && allowanceErrorDate === startDateStr && (
+            <p className="text-xs text-amber-800" role="status">Allowance preview is unavailable. Limits will be checked when you reserve.</p>
           )}
 
           {/* Charger select */}
@@ -298,6 +347,7 @@ export const BookingModal: React.FC<Props> = ({
           {/* Summary and Allowance impact preview */}
           {calculation && (
             <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 space-y-2 text-xs">
+              {allowanceLoading && <p className="text-blue-700" role="status">Checking your allowance for this date…</p>}
               <div className="flex justify-between items-center text-slate-600">
                 <span>Total Duration:</span>
                 <span className="font-semibold text-slate-800">
