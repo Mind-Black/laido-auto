@@ -607,3 +607,51 @@ BEGIN
 END;
 $$;
 
+-- RPC: claim_membership (bind invitation to authenticated user)
+CREATE OR REPLACE FUNCTION public.claim_membership()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_caller UUID := auth.uid();
+    v_email TEXT;
+    v_invitation RECORD;
+BEGIN
+    IF v_caller IS NULL THEN
+        RAISE EXCEPTION 'NOT_AUTHENTICATED';
+    END IF;
+
+    v_email := lower(auth.jwt()->>'email');
+    IF v_email IS NULL THEN
+        RAISE EXCEPTION 'NO_VERIFIED_EMAIL';
+    END IF;
+
+    SELECT * INTO v_invitation
+    FROM public.member_invitations
+    WHERE lower(email) = v_email
+    FOR UPDATE;
+
+    IF v_invitation.id IS NULL THEN
+        RAISE EXCEPTION 'NO_INVITATION_FOUND: Your email is not on the building member allowlist';
+    END IF;
+
+    INSERT INTO public.memberships (building_id, user_id, role, active)
+    VALUES (v_invitation.building_id, v_caller, v_invitation.intended_role, true)
+    ON CONFLICT (building_id, user_id)
+    DO UPDATE SET active = true, role = EXCLUDED.role;
+
+    UPDATE public.member_invitations
+    SET claimed_user_id = v_caller
+    WHERE id = v_invitation.id;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'building_id', v_invitation.building_id,
+        'role', v_invitation.intended_role
+    );
+END;
+$$;
+
+

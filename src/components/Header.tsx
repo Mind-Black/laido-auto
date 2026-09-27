@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../features/auth/AuthContext';
 import { UserSession } from '../lib/types';
-import { Zap, Calendar, User, Shield, Plus } from 'lucide-react';
+import { Zap, Calendar, User, Shield, Plus, LogIn, LogOut } from 'lucide-react';
 import { DEFAULT_TIMEZONE } from '../lib/time';
 
 interface Props {
@@ -17,7 +17,7 @@ export const Header: React.FC<Props> = ({
   onOpenAdmin,
   myBookingsCount,
 }) => {
-  const { currentUser, setCurrentUser, availableUsers } = useAuth();
+  const { currentUser, setCurrentUser, availableUsers, isConfigured, signInWithGoogle, signOut } = useAuth();
 
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
@@ -76,25 +76,48 @@ export const Header: React.FC<Props> = ({
             </button>
           )}
 
-          {/* User switcher (for testing multi-user allowance/conflict behavior) */}
-          <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200 text-xs">
-            <User className="w-3.5 h-3.5 text-slate-400" />
-            <select
-              value={currentUser.user_id}
-              onChange={(e) => {
-                const found = availableUsers.find((u: UserSession) => u.user_id === e.target.value);
-                if (found) setCurrentUser(found);
-              }}
-              className="bg-slate-50 border border-slate-200 rounded-md py-1 px-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-              aria-label="Switch User Identity"
-            >
-              {availableUsers.map((u: UserSession) => (
-                <option key={u.user_id} value={u.user_id}>
-                  {u.email} ({u.role})
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* User Section */}
+          {isConfigured ? (
+            <div className="flex items-center gap-2 pl-2 border-l border-slate-200 text-xs">
+              <span className="text-slate-700 font-medium hidden sm:inline">{currentUser.email}</span>
+              <button
+                onClick={currentUser.user_id ? () => signOut() : () => signInWithGoogle()}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-md transition-colors cursor-pointer"
+              >
+                {currentUser.user_id ? (
+                  <>
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign out</span>
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Sign in with Google</span>
+                  </>
+                )}
+              </button>
+            </div>
+          ) : (
+            /* Local Sandbox demo switcher */
+            <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200 text-xs">
+              <User className="w-3.5 h-3.5 text-slate-400" />
+              <select
+                value={currentUser.user_id}
+                onChange={(e) => {
+                  const found = availableUsers.find((u: UserSession) => u.user_id === e.target.value);
+                  if (found) setCurrentUser(found);
+                }}
+                className="bg-slate-50 border border-slate-200 rounded-md py-1 px-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                aria-label="Switch User Identity"
+              >
+                {availableUsers.map((u: UserSession) => (
+                  <option key={u.user_id} value={u.user_id}>
+                    {u.email} ({u.role})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
     </header>
