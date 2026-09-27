@@ -170,27 +170,18 @@ ALTER TABLE public.idempotency_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notification_outbox ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.job_health ENABLE ROW LEVEL SECURITY;
 
--- Read policies for active members
-CREATE POLICY "Members view buildings" ON public.buildings
+-- Read policies for authenticated users
+CREATE POLICY "Authenticated view buildings" ON public.buildings
     FOR SELECT TO authenticated
-    USING (EXISTS (
-        SELECT 1 FROM public.memberships m
-        WHERE m.building_id = buildings.id AND m.user_id = auth.uid() AND m.active = true
-    ));
+    USING (true);
 
-CREATE POLICY "Members view policies" ON public.booking_policies
+CREATE POLICY "Authenticated view policies" ON public.booking_policies
     FOR SELECT TO authenticated
-    USING (EXISTS (
-        SELECT 1 FROM public.memberships m
-        WHERE m.building_id = booking_policies.building_id AND m.user_id = auth.uid() AND m.active = true
-    ));
+    USING (true);
 
-CREATE POLICY "Members view chargers" ON public.chargers
+CREATE POLICY "Authenticated view chargers" ON public.chargers
     FOR SELECT TO authenticated
-    USING (EXISTS (
-        SELECT 1 FROM public.memberships m
-        WHERE m.building_id = chargers.building_id AND m.user_id = auth.uid() AND m.active = true
-    ));
+    USING (true);
 
 CREATE POLICY "Members view own membership" ON public.memberships
     FOR SELECT TO authenticated

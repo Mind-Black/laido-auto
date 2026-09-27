@@ -78,6 +78,10 @@ export async function createReservation(params: {
   endIso: string;
   idempotencyKey?: string;
 }): Promise<Reservation> {
+  if (!params.chargerId || params.chargerId.trim() === '') {
+    throw new Error('Please select a valid charger. If no chargers are listed, run seed.sql in Supabase to create Charger 1 and Charger 2.');
+  }
+
   if (isSupabaseConfigured && supabase) {
     const { data, error } = await supabase.rpc('create_reservation', {
       p_charger_id: params.chargerId,
@@ -103,6 +107,10 @@ export async function bookNow(params: {
   chargerId: string;
   durationMinutes: number;
 }): Promise<Reservation> {
+  if (!params.chargerId || params.chargerId.trim() === '') {
+    throw new Error('Please select a valid charger. If no chargers are listed, run seed.sql in Supabase to create Charger 1 and Charger 2.');
+  }
+
   if (isSupabaseConfigured && supabase) {
     const { data, error } = await supabase.rpc('book_now', {
       p_charger_id: params.chargerId,

@@ -124,6 +124,10 @@ export const BookingModal: React.FC<Props> = ({
       error = `Exceeds 12h weekly limit (${formatDuration(weeklyUsed + countedSeconds)} / 12h)`;
     }
 
+    if (!chargerId || chargerId.trim() === '') {
+      return { valid: false, error: 'Please select a charger' };
+    }
+
     return {
       valid: !dailyExceeded && !weeklyExceeded,
       durationSeconds,
@@ -133,13 +137,16 @@ export const BookingModal: React.FC<Props> = ({
       weeklyUsedAfter: weeklyUsed + countedSeconds,
       error,
     };
-  }, [startIso, endIso, allowances]);
+  }, [startIso, endIso, allowances, chargerId]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!startIso || !endIso || !calculation?.valid) return;
+    if (!startIso || !endIso || !calculation?.valid || !chargerId) {
+      if (!chargerId) setErrorMessage('Please select a charger');
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -198,26 +205,38 @@ export const BookingModal: React.FC<Props> = ({
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
               Select Charger
             </label>
-            <div className="grid grid-cols-2 gap-3">
-              {chargers.map((c) => (
-                <button
-                  type="button"
-                  key={c.id}
-                  disabled={!c.enabled}
-                  onClick={() => setChargerId(c.id)}
-                  className={`py-2.5 px-3 rounded-lg border text-sm font-medium transition-all text-left flex items-center justify-between ${
-                    chargerId === c.id
-                      ? 'border-blue-600 bg-blue-50/80 text-blue-900 ring-2 ring-blue-500/20'
-                      : !c.enabled
-                      ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
-                      : 'border-slate-200 hover:border-slate-300 text-slate-700'
-                  }`}
-                >
-                  <span>{c.display_name}</span>
-                  {!c.enabled && <span className="text-xs text-rose-600">Maintenance</span>}
-                </button>
-              ))}
-            </div>
+            {chargers.length === 0 ? (
+              <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg text-xs space-y-1">
+                <div className="font-semibold flex items-center gap-1.5 text-amber-800">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>No chargers found</span>
+                </div>
+                <p>
+                  No chargers were returned by the database. Please ensure you have executed <code>seed.sql</code> in the Supabase SQL editor to create Charger 1 and Charger 2, and that your account is registered as an active member.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {chargers.map((c) => (
+                  <button
+                    type="button"
+                    key={c.id}
+                    disabled={!c.enabled}
+                    onClick={() => setChargerId(c.id)}
+                    className={`py-2.5 px-3 rounded-lg border text-sm font-medium transition-all text-left flex items-center justify-between ${
+                      chargerId === c.id
+                        ? 'border-blue-600 bg-blue-50/80 text-blue-900 ring-2 ring-blue-500/20'
+                        : !c.enabled
+                        ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+                        : 'border-slate-200 hover:border-slate-300 text-slate-700'
+                    }`}
+                  >
+                    <span>{c.display_name}</span>
+                    {!c.enabled && <span className="text-xs text-rose-600">Maintenance</span>}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Start Time */}
