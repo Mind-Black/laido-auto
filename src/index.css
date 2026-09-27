@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg-allowance: rgba(59, 130, 246, 0.05);
+    --color-border-allowance: rgba(59, 130, 246, 0.2);
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans antialiased min-h-screen selection:bg-blue-100 selection:text-blue-900;
+  }
+}
+
+/* Diagonal stripe pattern for maintenance blocks */
+.bg-maintenance-stripes {
+  background-color: #f1f5f9;
+  background-image: repeating-linear-gradient(
+    45deg,
+    #e2e8f0,
+    #e2e8f0 10px,
+    #f8fafc 10px,
+    #f8fafc 20px
+  );
+}
+
+/* Subtle styling for the weekday allowance window (08:00 - 17:00 Mon-Fri) */
+.bg-allowance-window {
+  background-color: var(--color-bg-allowance);
+}
+
+/* Drag selection highlight */
+.drag-selection-box {
+  background-color: rgba(37, 99, 235, 0.18);
+  border: 2px dashed #2563eb;
+}
