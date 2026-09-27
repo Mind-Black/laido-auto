@@ -9,8 +9,10 @@ interface AuthContextType {
   availableUsers: UserSession[];
   isConfigured: boolean;
   isLoggedIn: boolean;
-  signInWithGoogle: () => Promise<void>;
   signInWithOtp: (email: string) => Promise<void>;
+  verifyOtp: (email: string, token: string) => Promise<void>;
+  signInWithPassword: (email: string, password: string) => Promise<void>;
+  signUpWithPassword: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -83,24 +85,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [syncMembership]);
 
-  const signInWithGoogle = async () => {
+  const signInWithOtp = async (email: string) => {
     if (isSupabaseConfigured && supabase) {
       const redirectUrl = window.location.origin + window.location.pathname;
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
         options: {
-          redirectTo: redirectUrl,
+          emailRedirectTo: redirectUrl,
         },
       });
       if (error) throw error;
     }
   };
 
-  const signInWithOtp = async (email: string) => {
+  const verifyOtp = async (email: string, token: string) => {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'email',
+      });
+      if (error) throw error;
+    }
+  };
+
+  const signInWithPassword = async (email: string, password: string) => {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+    }
+  };
+
+  const signUpWithPassword = async (email: string, password: string) => {
     if (isSupabaseConfigured && supabase) {
       const redirectUrl = window.location.origin + window.location.pathname;
-      const { error } = await supabase.auth.signInWithOtp({
+      const { error } = await supabase.auth.signUp({
         email,
+        password,
         options: {
           emailRedirectTo: redirectUrl,
         },
@@ -128,8 +152,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         availableUsers: DEMO_USERS,
         isConfigured: isSupabaseConfigured,
         isLoggedIn,
-        signInWithGoogle,
         signInWithOtp,
+        verifyOtp,
+        signInWithPassword,
+        signUpWithPassword,
         signOut,
       }}
     >
